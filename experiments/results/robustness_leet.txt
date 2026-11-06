@@ -1,0 +1,9 @@
+== leet: robustness of Bayes + Keller
+
+   1. planning with a wrong check cost (objective reduction vs tuned backoff at the true c)
+      true c        c_plan=c/10    c_plan=c/3      c_plan=c     c_plan=3c    c_plan=10c
+        200 ms          +16.5%        +40.3%        +48.1%        +47.2%        +27.9%
+       1000 ms          +10.8%        +28.2%        +32.7%        +28.7%        +12.5%
+       5000 ms          +13.7%        +22.7%        +24.0%        +19.6%         -7.5%
+
+   3. overhead: model predict + update 0.232 ms per call event (pure Python); Keller schedule 3.07 ms per call (6,000-point grid)

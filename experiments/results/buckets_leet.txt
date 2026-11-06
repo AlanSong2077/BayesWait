@@ -1,0 +1,29 @@
+== leet: gains by runtime bucket (n=1456)
+
+   c = 50 ms   (cells: mean delay ms / mean checks / mean cost; share of total cost)
+   < 1 s    n= 1296 ( 89%)  ours      18 /  1.37 /       87 ( 45%)  |  backoff      71 /  1.89 /      166 ( 37%)  |  fixed     122 /  1.43 /      193 ( 24%)  | ours vs backoff +47.7%
+   1-10 s   n=   99 (  7%)  ours     136 /  5.15 /      394 ( 16%)  |  backoff     469 /  9.87 /      963 ( 16%)  |  fixed     105 / 17.93 /     1001 (  9%)  | ours vs backoff +59.1%
+   >= 10 s  n=   61 (  4%)  ours     744 / 17.31 /     1609 ( 39%)  |  backoff    3378 / 20.92 /     4424 ( 47%)  |  fixed     104 / 227.66 /    11486 ( 67%)  | ours vs backoff +63.6%
+   delay > 5 s: ours 0.0%, backoff 1.0%, fixed 0.0%;  delay > 10 s: ours 0.0%, backoff 0.0%, fixed 0.0%
+   per call vs backoff: ours cheaper on 92%, costlier on 8%, tie 0%
+
+   c = 200 ms   (cells: mean delay ms / mean checks / mean cost; share of total cost)
+   < 1 s    n= 1296 ( 89%)  ours      33 /  1.12 /      257 ( 55%)  |  backoff     137 /  1.37 /      410 ( 46%)  |  fixed     371 /  1.07 /      585 ( 37%)  | ours vs backoff +37.3%
+   1-10 s   n=   99 (  7%)  ours     243 /  3.03 /      849 ( 14%)  |  backoff     531 /  7.35 /     2002 ( 17%)  |  fixed     251 /  7.46 /     1744 (  8%)  | ours vs backoff +57.6%
+   >= 10 s  n=   61 (  4%)  ours    1205 /  9.08 /     3021 ( 31%)  |  backoff    3453 / 17.89 /     7030 ( 37%)  |  fixed     236 / 91.33 /    18502 ( 55%)  | ours vs backoff +57.0%
+   delay > 5 s: ours 0.1%, backoff 1.0%, fixed 0.0%;  delay > 10 s: ours 0.0%, backoff 0.0%, fixed 0.0%
+   per call vs backoff: ours cheaper on 94%, costlier on 6%, tie 0%
+
+   c = 1000 ms   (cells: mean delay ms / mean checks / mean cost; share of total cost)
+   < 1 s    n= 1296 ( 89%)  ours      68 /  1.01 /     1080 ( 65%)  |  backoff     406 /  1.07 /     1475 ( 60%)  |  fixed     836 /  1.00 /     1836 ( 42%)  | ours vs backoff +26.8%
+   1-10 s   n=   99 (  7%)  ours     660 /  1.96 /     2620 ( 12%)  |  backoff    1958 /  3.26 /     5221 ( 16%)  |  fixed     539 /  4.02 /     4559 (  8%)  | ours vs backoff +49.8%
+   >= 10 s  n=   61 (  4%)  ours    3249 /  4.67 /     7921 ( 23%)  |  backoff    4007 /  8.39 /    12400 ( 24%)  |  fixed     458 / 45.89 /    46343 ( 50%)  | ours vs backoff +36.1%
+   delay > 5 s: ours 1.0%, backoff 2.0%, fixed 0.0%;  delay > 10 s: ours 0.1%, backoff 0.0%, fixed 0.0%
+   per call vs backoff: ours cheaper on 95%, costlier on 5%, tie -0%
+
+   c = 5000 ms   (cells: mean delay ms / mean checks / mean cost; share of total cost)
+   < 1 s    n= 1296 ( 89%)  ours     232 /  1.00 /     5236 ( 77%)  |  backoff     836 /  1.00 /     5836 ( 66%)  |  fixed    1836 /  1.00 /     6836 ( 52%)  | ours vs backoff +10.3%
+   1-10 s   n=   99 (  7%)  ours    1100 /  1.28 /     7514 (  8%)  |  backoff    2186 /  2.56 /    14963 ( 13%)  |  fixed     802 /  2.14 /    11509 (  7%)  | ours vs backoff +49.8%
+   >= 10 s  n=   61 (  4%)  ours    7031 /  2.67 /    20392 ( 14%)  |  backoff    3835 /  7.43 /    40966 ( 22%)  |  fixed     933 / 23.18 /   116835 ( 42%)  | ours vs backoff +50.2%
+   delay > 5 s: ours 2.1%, backoff 1.7%, fixed 0.0%;  delay > 10 s: ours 1.1%, backoff 0.0%, fixed 0.0%
+   per call vs backoff: ours cheaper on 96%, costlier on 4%, tie -0%

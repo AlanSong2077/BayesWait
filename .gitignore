@@ -1,0 +1,5 @@
+__pycache__/
+data/tracelab_calls.jsonl
+data/swe_llm_prior.json
+experiments/results/deepseek_ledger.json
+experiments/results/online_episodes.jsonl

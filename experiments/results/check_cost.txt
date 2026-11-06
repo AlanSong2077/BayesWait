@@ -1,0 +1,2 @@
+claude rounds= 261524  latency s: median 7.0 (IQR 4.1-13.9)  input tokens median 142855 (cached prefix 139471)  output 343
+codex  rounds= 156458  latency s: median 5.4 (IQR 3.3-9.6)  input tokens median 118918 (cached prefix 116096)  output 156

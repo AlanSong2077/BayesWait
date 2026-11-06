@@ -1,0 +1,35 @@
+== swe: scheduling ablations (n=4000), objective reduction vs tuned exponential backoff
+
+   c = 50 ms
+   backoff (tuned)                    delay      137  checks   1.87  objective       231
+   A  Bayes + Keller                  delay       65  checks   2.70  objective       200   vs backoff +13.2% [+9.9%, +16.7%]
+   B  median + residuals + Keller     delay       85  checks   2.67  objective       218   vs backoff  +5.3% [+0.4%, +9.8%]   vs A  +9.2% [+6.1%, +12.7%]
+   C  Bayes + exact DP                delay      127  checks   4.64  objective       359   vs backoff -55.8% [-96.2%, -18.0%]   vs A +79.6% [+37.5%, +124.2%]
+   D  median + residuals + exact DP   delay      305  checks   1.73  objective       391   vs backoff -69.8% [-175.3%, -6.8%]   vs A +95.7% [+21.7%, +216.6%]
+
+   c = 200 ms
+   backoff (tuned)                    delay      137  checks   1.87  objective       511
+   A  Bayes + Keller                  delay      116  checks   1.69  objective       454   vs backoff +11.3% [+9.3%, +13.1%]
+   B  median + residuals + Keller     delay      130  checks   1.62  objective       454   vs backoff +11.1% [+8.1%, +13.8%]   vs A  +0.2% [-2.6%, +3.3%]
+   C  Bayes + exact DP                delay      168  checks   3.89  objective       946   vs backoff -85.0% [-150.2%, -30.1%]   vs A +108.5% [+47.7%, +180.3%]
+   D  median + residuals + exact DP   delay      355  checks   1.40  objective       634   vs backoff -24.0% [-71.2%, +4.7%]   vs A +39.8% [+7.6%, +92.7%]
+
+   c = 1000 ms
+   backoff (tuned)                    delay      333  checks   1.45  objective      1783
+   A  Bayes + Keller                  delay      257  checks   1.26  objective      1514   vs backoff +15.1% [+13.2%, +17.2%]
+   B  median + residuals + Keller     delay      338  checks   1.22  objective      1561   vs backoff +12.5% [+10.0%, +14.9%]   vs A  +3.1% [+1.1%, +5.1%]
+   C  Bayes + exact DP                delay      247  checks   2.70  objective      2945   vs backoff -65.2% [-116.3%, -23.5%]   vs A +94.6% [+46.5%, +150.6%]
+   D  median + residuals + exact DP   delay      460  checks   1.21  objective      1673   vs backoff  +6.2% [-8.0%, +15.0%]   vs A +10.5% [+0.3%, +26.7%]
+
+   c = 5000 ms
+   backoff (tuned)                    delay      906  checks   1.15  objective      6634
+   A  Bayes + Keller                  delay      707  checks   1.08  objective      6124   vs backoff  +7.7% [+6.7%, +8.6%]
+   B  median + residuals + Keller     delay      994  checks   1.07  objective      6358   vs backoff  +4.2% [+2.9%, +5.4%]   vs A  +3.8% [+2.4%, +5.3%]
+   C  Bayes + exact DP                delay      415  checks   3.18  objective     16319   vs backoff -146.0% [-244.4%, -65.6%]   vs A +166.5% [+78.8%, +272.7%]
+   D  median + residuals + exact DP   delay      675  checks   1.11  objective      6207   vs backoff  +6.4% [+2.8%, +9.1%]   vs A  +1.3% [-1.6%, +5.4%]
+
+   in-model check (expected objective under the model's own predictive, 400 targets): Keller / exact DP - 1
+   c =    50 ms: median gap +21.6%, mean +5.3%, P90 +26.4%
+   c =   200 ms: median gap +6.6%, mean -2.5%, P90 +16.6%
+   c =  1000 ms: median gap +0.9%, mean -6.6%, P90 +6.0%
+   c =  5000 ms: median gap +3.2%, mean -5.8%, P90 +4.0%

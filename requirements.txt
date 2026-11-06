@@ -1,0 +1,3 @@
+numpy
+scipy
+# online experiment additionally: jinja2, pyyaml

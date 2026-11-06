@@ -1,0 +1,7 @@
+== swe: component ablations (each model refit on the tuning part)
+   model                           test LPD   cov80   MdAPE  vs backoff c=200ms     c=1s
+   final model                        0.103   83.9%    5.9%             +11.3%   +15.1%
+   per-level discounts               -0.026   87.0%    5.7%             +12.3%   +16.1%
+   no discount (delta = 1)           -0.868   90.7%    9.3%              +1.3%   +10.2%
+   Gaussian noise (no t)             -0.098   90.7%   11.2%             +12.0%   +14.9%
+   no hierarchy (root + exact)       -0.851   80.7%   10.4%              -0.6%    +4.1%

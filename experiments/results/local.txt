@@ -1,0 +1,38 @@
+== local: 120 calls; tune 34, test 82, scheduling sample 82
+   model fitted on the tuning part (0 settings, 0s): {"kappa": [0.01, 0.01, 30], "delta": [1.0, 1.0, 1.0], "kappa_b": 0.1, "kappa_c": 10, "nu0": 4, "nu_obs": 4}  tune LPD -0.257
+
+   prediction on the test part (n=82): MdAPE / P90 APE of the point estimate (median)
+   LLM prior                      MdAPE    92.5%   P90      364%
+   last run, same command         MdAPE     9.3%   P90       88%
+   last run x size ratio          MdAPE    13.7%   P90       95%
+   median, deepest history level  MdAPE    11.7%   P90       95%
+   ours: Bayes                    MdAPE     7.7%   P90       34%
+   ours: Bayes + LLM prior        MdAPE     7.5%   P90       34%
+   ours: test log predictive density 0.130, 80% interval coverage 72.0%
+   MdAPE by group (last run x size ratio / ours):
+     interpolation              n=    18     42.4      8.2
+     same-scale repeat          n=    56      5.9      6.7
+
+   scheduling, c = 50 ms per check (n=82; objective = mean delay + c x mean checks)
+   exponential backoff 200 ms x1.25 (tuned) delay      119 ms  P90      242  checks    2.00  objective       219
+   fixed interval 200 ms (tuned)          delay       98 ms  P90      172  checks    2.85  objective       241  vs backoff   -9.9% [-22.6%, +0.0%]
+   LLM estimate + 100 ms                  delay      844 ms  P90     2653  checks    1.32  objective       910  vs backoff -315.2% [-619.4%, -63.8%]
+   ours: Bayes + Keller                   delay       37 ms  P90       61  checks    1.89  objective       132  vs backoff  +39.9% [+14.2%, +51.0%]
+
+   scheduling, c = 200 ms per check (n=82; objective = mean delay + c x mean checks)
+   exponential backoff 200 ms x1.25 (tuned) delay      119 ms  P90      242  checks    2.00  objective       519
+   fixed interval 500 ms (tuned)          delay      332 ms  P90      436  checks    1.61  objective       654  vs backoff  -26.0% [-110.0%, -4.6%]
+   LLM estimate + 100 ms                  delay      844 ms  P90     2653  checks    1.32  objective      1108  vs backoff -113.3% [-202.4%, -41.3%]
+   ours: Bayes + Keller                   delay       65 ms  P90      106  checks    1.38  objective       341  vs backoff  +34.4% [+1.3%, +47.6%]
+
+   scheduling, c = 1000 ms per check (n=82; objective = mean delay + c x mean checks)
+   exponential backoff 1000 ms x1.5 (tuned) delay      829 ms  P90      942  checks    1.18  objective      2012
+   fixed interval 1000 ms (tuned)         delay      747 ms  P90      933  checks    1.22  objective      1966  vs backoff   +2.3% [+0.0%, +5.0%]
+   LLM estimate + 100 ms                  delay      844 ms  P90     2653  checks    1.32  objective      2161  vs backoff   -7.4% [-41.0%, +16.3%]
+   ours: Bayes + Keller                   delay      117 ms  P90      136  checks    1.06  objective      1178  vs backoff  +41.5% [+37.8%, +43.8%]
+
+   scheduling, c = 5000 ms per check (n=82; objective = mean delay + c x mean checks)
+   exponential backoff 2000 ms x3 (tuned) delay     1747 ms  P90     1936  checks    1.04  objective      6930
+   fixed interval 2000 ms (tuned)         delay     1601 ms  P90     1928  checks    1.04  objective      6783  vs backoff   +2.1% [+0.0%, +6.7%]
+   LLM estimate + 100 ms                  delay      844 ms  P90     2653  checks    1.32  objective      7429  vs backoff   -7.2% [-32.1%, +6.3%]
+   ours: Bayes + Keller                   delay      323 ms  P90      344  checks    1.01  objective      5384  vs backoff  +22.3% [+16.7%, +26.8%]

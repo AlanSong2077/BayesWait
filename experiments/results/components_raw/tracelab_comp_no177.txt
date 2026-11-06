@@ -1,0 +1,21 @@
+== tracelab: 415279 calls; tune 27986, test 195902, scheduling sample 4000
+   model fitted on the tuning part (30 settings, 84s): {"kappa": [30, 0.03], "delta": [0.3, 0.3], "kappa_b": 1, "kappa_c": 10, "nu0": 1, "nu_obs": 2}  tune LPD -0.822
+
+   prediction on the test part (n=195902): MdAPE / P90 APE of the point estimate (median)
+   last run, same command         MdAPE    51.6%   P90      549%
+   median, deepest history level  MdAPE    35.5%   P90      263%
+   ours: Bayes                    MdAPE    35.5%   P90      286%
+   ours: test log predictive density -1.476, 80% interval coverage 85.6%
+   MdAPE by group (last run of the same command / ours):
+     exact                      n=114365     17.1     17.3
+     root                       n= 81537     96.8     80.1
+
+   scheduling, c = 200 ms per check (n=4000; objective = mean delay + c x mean checks)
+   exponential backoff 500 ms x1.25 (tuned) delay      756 ms  P90     1513  checks    4.32  objective      1620
+   fixed interval 1000 ms (tuned)         delay      675 ms  P90      942  checks   14.14  objective      3503  vs backoff -116.3% [-152.6%, -82.4%]
+   ours: Bayes + Keller                   delay     1005 ms  P90     2370  checks    3.30  objective      1665  vs backoff   -2.8% [-7.1%, +1.8%]
+
+   scheduling, c = 1000 ms per check (n=4000; objective = mean delay + c x mean checks)
+   exponential backoff 500 ms x1.5 (tuned) delay      980 ms  P90     2843  checks    3.71  objective      4688
+   fixed interval 2000 ms (tuned)         delay     1411 ms  P90     1884  checks    7.44  objective      8852  vs backoff  -88.8% [-113.2%, -63.7%]
+   ours: Bayes + Keller                   delay     2389 ms  P90     6183  checks    1.96  objective      4349  vs backoff   +7.2% [+1.2%, +13.4%]

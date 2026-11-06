@@ -1,0 +1,7 @@
+== tracelab: component ablations (each model refit on the tuning part)
+   model                           test LPD   cov80   MdAPE  vs backoff c=200ms     c=1s
+   final model                       -1.123   81.3%   30.1%              +9.8%   +16.8%
+   per-level discounts               -1.118   80.0%   29.8%              +7.2%   +17.9%
+   no discount (delta = 1)           -1.441   83.7%   60.7%              +8.4%   +16.7%
+   Gaussian noise (no t)             -1.168   84.8%   34.2%              +6.4%   +15.0%
+   no hierarchy (root + exact)       -1.476   85.6%   35.5%              -2.8%    +7.2%

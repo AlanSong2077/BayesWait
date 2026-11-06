@@ -1,0 +1,13 @@
+== swe: robustness of Bayes + Keller
+
+   1. planning with a wrong check cost (objective reduction vs tuned backoff at the true c)
+      true c        c_plan=c/10    c_plan=c/3      c_plan=c     c_plan=3c    c_plan=10c
+        200 ms          -52.8%         -7.5%        +11.3%         +9.2%        -22.0%
+       1000 ms          -19.7%         +7.5%        +15.1%         +9.6%        -25.8%
+       5000 ms           -7.8%         +5.2%         +7.7%         -2.9%        -59.5%
+
+   2. five independent scheduling samples of 4,000 test calls: reduction vs tuned backoff
+      c =   200 ms: +11.5%  +13.1%  +11.3%  +10.7%  +11.4%   mean +11.6%, sd 0.8%
+      c =  1000 ms: +14.4%  +13.1%  +15.0%  +15.3%  +14.8%   mean +14.5%, sd 0.8%
+
+   3. overhead: model predict + update 0.357 ms per call event (pure Python); Keller schedule 1.72 ms per call (6,000-point grid)

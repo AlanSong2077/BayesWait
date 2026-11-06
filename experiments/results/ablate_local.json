@@ -1,0 +1,82 @@
+{
+ "c=50|backoff (tuned)": {
+  "objective": 219.1662621474847,
+  "vs_backoff": 0.0
+ },
+ "c=50|A  Bayes + Keller": {
+  "objective": 134.86615688300355,
+  "vs_backoff": 0.3846399734999023
+ },
+ "c=50|B  median + residuals + Keller": {
+  "objective": 161.24936104670758,
+  "vs_backoff": 0.2642601125432472
+ },
+ "c=50|C  Bayes + exact DP": {
+  "objective": 130.72165281022296,
+  "vs_backoff": 0.40355029314568613
+ },
+ "c=50|D  median + residuals + exact DP": {
+  "objective": 161.89070984141537,
+  "vs_backoff": 0.26133380085447
+ },
+ "c=200|backoff (tuned)": {
+  "objective": 519.1662621474848,
+  "vs_backoff": 0.0
+ },
+ "c=200|A  Bayes + Keller": {
+  "objective": 347.35596909861806,
+  "vs_backoff": 0.33093501172088646
+ },
+ "c=200|B  median + residuals + Keller": {
+  "objective": 411.56131424584066,
+  "vs_backoff": 0.2072649086567102
+ },
+ "c=200|C  Bayes + exact DP": {
+  "objective": 332.6011261791383,
+  "vs_backoff": 0.3593552770486982
+ },
+ "c=200|D  median + residuals + exact DP": {
+  "objective": 386.4653587029623,
+  "vs_backoff": 0.25560386550469794
+ },
+ "c=1000|backoff (tuned)": {
+  "objective": 2012.1012195121953,
+  "vs_backoff": 0.0
+ },
+ "c=1000|A  Bayes + Keller": {
+  "objective": 1215.278347721411,
+  "vs_backoff": 0.39601530184647593
+ },
+ "c=1000|B  median + residuals + Keller": {
+  "objective": 1314.14355900495,
+  "vs_backoff": 0.34687999477305365
+ },
+ "c=1000|C  Bayes + exact DP": {
+  "objective": 1264.9659228279318,
+  "vs_backoff": 0.3713209302986237
+ },
+ "c=1000|D  median + residuals + exact DP": {
+  "objective": 1407.9710554054761,
+  "vs_backoff": 0.3002483961781911
+ },
+ "c=5000|backoff (tuned)": {
+  "objective": 6929.7841463414625,
+  "vs_backoff": 0.0
+ },
+ "c=5000|A  Bayes + Keller": {
+  "objective": 5417.0830075245185,
+  "vs_backoff": 0.21828979184229935
+ },
+ "c=5000|B  median + residuals + Keller": {
+  "objective": 5763.643997273849,
+  "vs_backoff": 0.1682794333043216
+ },
+ "c=5000|C  Bayes + exact DP": {
+  "objective": 5436.827565804797,
+  "vs_backoff": 0.21544056048626892
+ },
+ "c=5000|D  median + residuals + exact DP": {
+  "objective": 6039.90196595054,
+  "vs_backoff": 0.12841412684704334
+ }
+}

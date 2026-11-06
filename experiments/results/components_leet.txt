@@ -1,0 +1,8 @@
+== leet: component ablations (each model refit on the tuning part)
+   model                           test LPD   cov80   MdAPE  vs backoff c=200ms     c=1s
+   final model                        0.896   87.8%    3.8%             +48.0%   +35.2%
+   per-level discounts                0.896   87.8%    3.8%             +48.0%   +35.2%
+   no discount (delta = 1)            0.896   87.8%    3.8%             +48.0%   +35.2%
+   Gaussian noise (no t)              0.493   83.5%    5.2%             +47.5%   +33.9%
+   no hierarchy (root + exact)       -0.795   91.6%   17.3%             +16.2%   +11.5%
+   no curvature (power law)           0.898   87.8%    3.8%             +48.0%   +35.2%

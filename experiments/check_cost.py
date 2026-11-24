@@ -1,6 +1,4 @@
-"""What does one status check cost when the agent itself performs it (one extra LLM round)?
-Measured on TraceLab: rounds that start from a tool result, latency from the tool result to the model's last
-output event, and input/output tokens of that round.   Usage: python3 experiments/check_cost.py syfi_coding_trace.jsonl.gz"""
+"""Measure latency and token usage of TraceLab rounds starting from tool results."""
 import collections, datetime as dt, gzip, json, sys
 import numpy as np
 ts = lambda s: dt.datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp()

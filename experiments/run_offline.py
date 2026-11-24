@@ -1,28 +1,4 @@
-"""Offline evaluation: hierarchical Bayesian runtime model + Keller optimal checks vs. the baselines.
-
-  python3 experiments/run_offline.py leet                       # LeetCode suite (data/leetcode_trials.jsonl)
-  python3 experiments/run_offline.py local                      # local-tool suite (data/local_trials.jsonl)
-  python3 experiments/run_offline.py swe      data/swe_calls.jsonl
-  python3 experiments/run_offline.py tracelab data/tracelab_calls.jsonl
-  env: COSTS (default 50,200,1000,5000 ms per check), LLM_PRIOR (SWE: data/swe_llm_prior.json),
-       HYPER_FROM (reuse hyper-parameters from a results/*.json), TAG (output suffix)
-
-Counterfactual replay of recorded runtimes. Everything is causal: a runtime enters the model only after its
-call finished. Split: LeetCode / local suites - first 30% of warm runs (runs of a task that has run before) tune, the rest test;
-traces - targets (successful calls >= 100 ms) in 10 time blocks, blocks 1-2 history only, block 3 tunes,
-blocks 4-10 test (scheduling on a random sample of 4000 test targets). Tuning: the model's hyper-parameters
-maximise the log predictive density on the tuning part; every baseline's parameters minimise the objective
-on the tuning part (the local suite, 34 tuning runs, reuses the LeetCode hyper-parameters). Objective = mean detection delay + c x mean number of checks. 95% CIs: bootstrap over
-tasks (suites) / sessions (traces).
-
-Prediction baselines: LLM runtime estimate (where available); last run of the same command; median of the
-most specific history level (3Sigma-style empirical history).
-Check policies
-  exponential backoff (tuned)   start s, factor f, cap 10 s
-  fixed interval (tuned)        check every d ms
-  LLM estimate + 100 ms         (where available) first check at the LLM's runtime estimate, then every 100 ms
-  ours: Bayes + Keller          hierarchical Bayesian predictive -> Keller checks n(t) = sqrt(h(t)/2c)
-"""
+"""Causal replay of recorded runtimes for prediction and scheduling evaluation."""
 import collections, hashlib, heapq, json, math, os, sys, time
 import numpy as np
 from scipy import stats
@@ -38,7 +14,7 @@ LLM_PRIOR = os.environ.get("LLM_PRIOR")
 OUT = os.path.join(ROOT, "experiments", "results"); lines = []; summary = {}
 def out(s=""): print(s, flush=True); lines.append(s)
 
-# ======================================================================= data -> causal event stream
+# Data and causal events
 def suite_data():
     """-> list of calls in execution order with chain, x, family history key, LLM prior; warm flag"""
     if MODE == "local":
@@ -105,7 +81,7 @@ def events(calls, upto=None):
         yield "predict", i
         heapq.heappush(pend, (c["t_end"], i))
 
-# ======================================================================= one causal pass
+# Predict before learning each completed runtime
 def run_pass(calls, h, want, upto=None, scaled=True):
     """h: model hyper-parameters. want: set of target ids to record. -> {i: dict(pred, llm, last, med, fused)}"""
     m = HB(scaled=scaled, **h); fam = {}; res = {}; node = collections.defaultdict(lambda: collections.deque(maxlen=20))
@@ -127,7 +103,7 @@ def run_pass(calls, h, want, upto=None, scaled=True):
             if c["llm"]: lp[0] = 0.999 * lp[0] + 1; lp[1] = 0.999 * lp[1] + math.log(max((y - math.log(c["llm"])) ** 2, 1e-12))
     return res
 
-# ======================================================================= empirical-Bayes fit (coordinate ascent)
+# Empirical-Bayes fit by coordinate ascent
 KG = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]; DG = [1.0, 0.95, 0.85, 0.7, 0.5, 0.3]
 GRID = dict(kappa_b=[0.001, 0.01, 0.1, 1, 10], kappa_c=[0.1, 1, 10, 100, 1e4], nu0=[1, 2, 4, 8, 16, 32, 64], nu_obs=[1, 2, 4, 10, 1e9])
 
@@ -176,7 +152,7 @@ def fit(calls, tune, end, depth, scaled):
     f = lambda x: cache[tuple(sorted(x.items()))]
     return hp(best), f(best), len(cache)
 
-# ======================================================================= evaluation
+# Evaluation
 def main():
     t0 = time.time()
     calls = prune(suite_data() if MODE in ("leet", "local") else trace_data())
@@ -192,7 +168,7 @@ def main():
     T = {i: calls[i]["ms"] for i in res}; ape = lambda p, t: abs(p - t) / t * 100
     has_llm = any(res[i]["llm"] for i in test) and not os.environ.get("NO_LLM")   # NO_LLM=1: history-only predictive
     ours_pred = lambda i: res[i].get("fused", res[i]["pred"]) if has_llm else res[i]["pred"]
-    # ---------------- prediction
+    # Prediction
     out(f"\n   prediction on the test part (n={len(test)}): MdAPE / P90 APE of the point estimate (median)")
     rows = [("last run, same command", lambda i: res[i]["last"]), ("median, deepest history level", lambda i: res[i]["med"]),
             ("ours: Bayes", lambda i: math.exp(res[i]["pred"][0]))]
@@ -208,7 +184,7 @@ def main():
     out(f"   ours: test log predictive density {tlpd:.3f}, 80% interval coverage {cov:.1%}")
     summary["fit"] = dict(tune_lpd=lpd, test_lpd=tlpd, coverage80=float(cov))
     by_group_tables(calls, res, test, T, ape)
-    # ---------------- scheduling
+    # Scheduling
     groups = np.array([calls[i]["group"] for i in sched], object); ug = np.unique(groups); gi = {u: np.where(groups == u)[0] for u in ug}
     rng = np.random.default_rng(1); boots = [np.concatenate([gi[u] for u in rng.choice(ug, len(ug))]) for _ in range(1000)]
     run = lambda f, ids: np.array([simulate(f(i), T[i]) for i in ids])

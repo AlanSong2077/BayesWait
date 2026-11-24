@@ -1,9 +1,7 @@
-"""Infer task families and workload scale from shell commands in real agent traces.
+"""Command-family keys and workload scale for SWE-bench and TraceLab.
 
-describe_swe(cmd, repo)      : full command text (mini-SWE-agent trajectories)
-describe_skeleton(sk, ...)   : TraceLab-style anonymised command skeleton (executables only)
-Both return keys from most to least specific: exact (same task/session), l2 (same template, any task of the
-repo/project), l3 (same runner in the repo/project), glob (same runner anywhere), plus runner and scale."""
+Descriptions contain exact, l2, l3 and glob hierarchy keys, plus runner and scale.
+"""
 import re, shlex, hashlib
 
 def clean(cmd):

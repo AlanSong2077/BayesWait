@@ -1,9 +1,6 @@
-"""Component ablations of the Bayesian model: refit each reduced model on the tuning part and evaluate.
-
-  python3 experiments/components.py {leet|swe|tracelab} [calls.jsonl]
-"""
+"""Refit and evaluate Bayesian model component ablations."""
 import json, os, subprocess, sys
-HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE); OUT = os.path.join(HERE, "results")
+HERE = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(HERE, "results")
 mode = sys.argv[1]; extra = sys.argv[2:]
 depth = 3 if mode in ("leet", "local") else 5
 S = {"FIT_SHARED_DELTA": "1"}          # the final model: one discount shared by all levels

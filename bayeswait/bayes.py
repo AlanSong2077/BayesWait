@@ -1,22 +1,7 @@
-"""Hierarchical Bayesian runtime model.
+"""Hierarchical Bayesian runtime prediction and Keller checking schedules.
 
-    y = log T,  x = log(workload scale)  (x = 0 for commands without a scale)
-    y = beta_0 + beta_1 x + beta_2 x^2 + eps            local power law with curvature (fixed start-up cost
-                                                       bends the log-log curve)
-    eps ~ Student-t(nu_obs, 0, s2)                     heavy-tailed noise (scale mixture of normals)
-    beta_node ~ N(beta_parent, s2 D_d)                 nested levels: root -> ... -> exact command
-    s2_node ~ scaled-Inv-chi2(nu0, s2_depth)           noise variance shrunk to the pooled value of its depth
-    a node's past observations are discounted by delta_d per newer observation (local-level dynamics)
-
-D_d is diagonal in the node's own centred coordinates (level at the node's mean scale, slope, curvature): the
-level deviates with variance 1/kappa_d, slope and curvature with 1/kappa_b and 1/kappa_c; the most specific
-level (one command, one scale) deviates only in level. Each node is a conjugate Normal-Inverse-Gamma update
-whose prior is its parent's posterior, so it follows its parent while it has little data and itself once it
-has much (credibility weighting). The posterior predictive of log T is Student-t.
-
-Common history heuristics are special cases: delta = 1 -> mean of the history, delta -> 0 -> last value, 0 < delta < 1 ->
-EMA; beta_1 = 1, 2 -> linear / quadratic growth; per-family LOO model choice -> shrinkage of slope and curvature
-to the parent's. Hyper-parameters are set by maximising the log predictive density of held-out early calls.
+Runtime T is in milliseconds; the model predicts log T using discounted
+sufficient statistics.
 """
 from __future__ import annotations
 import math
@@ -38,7 +23,6 @@ class HB:
         self.st = {}                                   # node -> [XtX (3x3), Xty (3), yty]
         self.pool = [[1.0, math.log(s20)] for _ in range(n)]   # per depth: running mean of log squared residual
 
-    # ---------------------------------------------------------------- internals
     def _s2p(self, d):
         """pooled noise variance of depth d, geometric-mean estimator (E log chi2_1 = -1.2704)"""
         return math.exp(self.pool[d][1] / self.pool[d][0] + 1.2704)
@@ -67,7 +51,6 @@ class HB:
             out.append((m, Pi, s2, W))
         return out
 
-    # ---------------------------------------------------------------- API
     def _walk1(self, chain):
         m, Pi, s2, W = self.m0[0], 100.0, self.s20, 0.0; out = []
         for d, node in enumerate(chain):
@@ -131,9 +114,11 @@ def keller_profile(loc, scale, dof, horizon_ms=6e8, first_ms=5.0):
     return t, np.concatenate([[0.0], np.cumsum(0.5 * (n[1:] + n[:-1]) * np.diff(t))])
 
 def keller_checks(loc, scale, dof, c, profile=None):
-    """Keller (1974): for delay cost 1 per ms and cost c per check the optimal checking density is
-    n(t) = sqrt(h(t) / 2c), h = hazard rate of the predictive runtime distribution; the k-th check is placed
-    where the cumulative density N(t) reaches k - 1/2."""
+    """Discretise Keller's continuous checking density n(t) = sqrt(h(t) / 2c).
+
+    Delay costs 1 per ms; each check costs c. Checks occur at cumulative density
+    k - 1/2, interpolated on the profile grid.
+    """
     t, N1 = profile if profile is not None else keller_profile(loc, scale, dof)
     N = N1 / math.sqrt(c); ks = np.arange(0.5, N[-1], 1.0)
     return list(np.interp(ks, N, t)) if len(ks) else [float(math.exp(loc))]

@@ -1,13 +1,5 @@
-"""Summarise experiments/results/online_swe/episodes.jsonl -> experiments/results/online_swe/summary.txt
-
-Per policy (tasks completed under both policies, paired):
-  waiting delay   sum over commands of (time the agent saw the result - time the command finished)
-  status rounds   extra LLM rounds spent on 'still running' checks, their tokens and dollars
-  per command     mean delay, checks, and the offline objective delay + c x checks with the measured c
-  task level      wall time, all LLM rounds, tokens, dollars, submitted rate
-Paired bootstrap over tasks (2,000 resamples) for ours vs backoff.
-"""
-import json, os, sys
+"""Summarise paired online episodes with 2,000 task-level bootstrap resamples."""
+import json, os
 import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); OUT = os.environ.get("OUT_DIR") or os.path.join(os.path.dirname(HERE), "results", "online_swe")
 E = [json.loads(l) for l in open(os.path.join(OUT, "episodes.jsonl"))]

@@ -1,11 +1,6 @@
-"""Paper-style LLM runtime priors for the SWE-bench trace (run on your machine; needs the DeepSeek key).
+"""Cache LLM runtime priors for SWE-bench calibration and scheduling samples.
 
-Queries one prior per unique (repo, command) among exactly the targets that run_offline.py uses for
-calibration (block 3 sample) and scheduling (test sample), same seeds. Cached and resumable:
-data/swe_llm_prior.json.  Budget: MAX_USD (default 3).
-
-  python3 experiments/llm_prior_swe.py
-  LLM_PRIOR=data/swe_llm_prior.json TAG=_llm python3 experiments/run_offline.py swe data/swe_calls.jsonl
+Sampling matches run_offline.py; cache: data/swe_llm_prior.json.
 """
 import concurrent.futures as cf, hashlib, json, os, sys, threading, time
 import numpy as np
@@ -45,7 +40,10 @@ def main():
         for f in cf.as_completed(futs):
             try: k, v = f.result()
             except D.OutOfBudget as e:
-                print("stopped:", e); [g.cancel() for g in futs]; break
+                print("stopped:", e)
+                for g in futs:
+                    g.cancel()
+                break
             with lock:
                 cache[k] = v; done += 1
                 if done % 100 == 0 or done == len(todo):

@@ -1,4 +1,4 @@
-# Prompts and formats copied from mini-swe-agent v2.4.6 (MIT License, see LICENSE_mini-swe-agent.md),
+# Prompts and formats copied from mini-swe-agent v2.4.6 (MIT License, see LICENSE_mini-swe-agent),
 # src/minisweagent/config/benchmarks/swebench_backticks.yaml, commit 04d809c.
 agent:
   system_template: |

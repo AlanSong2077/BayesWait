@@ -1,21 +1,14 @@
-"""Robustness of Bayes + Keller (same model and hyper-parameters as run_offline.py, results/<mode>.json).
-
-  python3 experiments/robustness.py {leet|local|swe|tracelab} [calls.jsonl]
-
-  1. misspecified check cost: plan with c_plan = c / 10 ... 10 c, pay the true c
-  2. resampling: 5 different random scheduling samples (seeds), improvement vs tuned backoff
-  3. overhead: wall time of one predict + update and of one Keller schedule
-"""
-import json, math, os, sys, time
+"""Check-cost sensitivity, scheduling resamples and computation overhead."""
+import json, os, sys, time
 import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.dirname(HERE))
 import run_offline as RO
-from bayeswait.bayes import HB, keller_profile, keller_checks
+from bayeswait.bayes import keller_profile, keller_checks
 from bayeswait.baselines import backoff_policy, simulate, BACKOFF_GRID
 
 def main():
     mode = RO.MODE; calls = RO.suite_data() if mode in ("leet", "local") else RO.trace_data()
-    sp = RO.splits(calls); tune, test, sched, end = sp[:4]; sched_tune = sp[4] if len(sp) > 4 else tune
+    sp = RO.splits(calls); tune, test, sched, _ = sp[:4]; sched_tune = sp[4] if len(sp) > 4 else tune
     scaled = any(c["scale"] for c in calls); h = json.load(open(os.path.join(RO.OUT, f"{mode}.json")))["hyper"]
     rng = np.random.default_rng(7)
     pools = [sorted(rng.choice(test, min(len(test), 4000), replace=False).tolist()) for _ in range(5)] if mode in ("swe", "tracelab") else [test]

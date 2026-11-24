@@ -1,22 +1,14 @@
-"""Ablations on the scheduling objective (same data, splits, samples and hyper-parameters as run_offline.py).
+"""Scheduling ablations using Bayesian or empirical-residual predictions.
 
-  python3 experiments/ablate.py {leet|local|swe|tracelab} [calls.jsonl]       (uses experiments/results/<mode>.json)
-
-  A  Bayes + Keller                    the method
-  B  history median + empirical residuals + Keller
-                                       point estimate = median of the deepest history level (3Sigma-style),
-                                       distribution = causal pool of log(T / median) of finished calls with the
-                                       same history level (last 1000), Gaussian-kernel smoothed
-  C  Bayes + exact optimal checks (DP) Barlow-Hunter-Proschan dynamic programme on the same predictive
-  D  median + residuals + DP
-A vs B: does the Bayesian predictive matter?   A vs C: how far is Keller's closed form from the optimum?
+Each prediction is paired with Keller checks or grid-based dynamic programming.
+Uses the splits and fitted hyper-parameters from run_offline.py.
 """
 import collections, json, math, os, sys, time
 import numpy as np
 from scipy import stats
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.dirname(HERE))
 import run_offline as RO
-from bayeswait.bayes import HB, keller_profile, keller_checks
+from bayeswait.bayes import HB, keller_profile
 from bayeswait.baselines import backoff_policy, simulate, BACKOFF_GRID
 
 TG = np.geomspace(5.0, 6e8, 4000)     # time grid for KDE hazards (ms)
@@ -50,12 +42,12 @@ Q = (np.arange(400) + 0.5) / 400
 def main():
     mode = RO.MODE; t0 = time.time()
     calls = RO.suite_data() if mode in ("leet", "local") else RO.trace_data()
-    sp = RO.splits(calls); tune, test, sched, end = sp[:4]; sched_tune = sp[4] if len(sp) > 4 else tune
+    sp = RO.splits(calls); tune, _, sched, _ = sp[:4]; sched_tune = sp[4] if len(sp) > 4 else tune
     scaled = any(c["scale"] for c in calls); h = json.load(open(os.path.join(RO.OUT, f"{mode}.json")))["hyper"]
     keep = set(sched) | set(sched_tune)
     # causal pass: Bayes predictive + median of deepest level + residual pool per level
     m = HB(scaled=scaled, **h); node = collections.defaultdict(lambda: collections.deque(maxlen=20))
-    pool = collections.defaultdict(lambda: collections.deque(maxlen=1000)); info = {}; R = {}
+    residuals = collections.defaultdict(lambda: collections.deque(maxlen=1000)); info = {}; R = {}
     for kind, i in RO.events(calls):
         c = calls[i]
         if kind == "predict" and c["target"]:
@@ -63,10 +55,10 @@ def main():
             med = float(np.median(node[c["chain"][lv]])) if lv >= 0 else math.log(RO.DEFAULT_MS)
             info[i] = (lv, med)
             if i in keep:
-                R[i] = dict(pred=m.predict(c["chain"], c["x"]), med=med, resid=np.array(pool[lv]) if len(pool[lv]) >= 20 else np.random.default_rng(0).normal(0, 1, 200))
+                R[i] = dict(pred=m.predict(c["chain"], c["x"]), med=med, resid=np.array(residuals[lv]) if len(residuals[lv]) >= 20 else np.random.default_rng(0).normal(0, 1, 200))
         elif kind == "learn" and c.get("learn", True):
             y = math.log(c["ms"]); m.update(c["chain"], c["x"], y)
-            if i in info: lv, med = info[i]; pool[lv].append(y - med)
+            if i in info: lv, med = info[i]; residuals[lv].append(y - med)
             for n in c["chain"]: node[n].append(y)
     print(f"[{mode}] pass done {time.time()-t0:.0f}s", flush=True)
     T = {i: calls[i]["ms"] for i in keep}
@@ -77,7 +69,15 @@ def main():
     profA = {i: keller_profile(*R[i]["pred"]) for i in sched}; profB = {i: kde_profile(R[i]["med"], R[i]["resid"]) for i in sched}
     sampA = {i: np.exp(np.clip(R[i]["pred"][0] + R[i]["pred"][1] * stats.t.ppf(Q, R[i]["pred"][2]), 1.0, 21.0)) for i in sched}
     sampB = {i: np.exp(R[i]["med"] + np.random.default_rng(2).choice(R[i]["resid"], 400)) for i in sched}
-    kel = lambda prof, c: (lambda i: (lambda t, N: (lambda ks: list(np.interp(ks, N, t)) if len(ks) else [t[np.searchsorted(N, 0.5 * N[-1])]])(np.arange(0.5, N[-1], 1.0)))(prof[i][0], prof[i][1] / math.sqrt(c)))
+    def kel(profiles, cost):
+        def schedule(i):
+            t, N1 = profiles[i]
+            N = N1 / math.sqrt(cost)
+            ks = np.arange(0.5, N[-1], 1.0)
+            if len(ks):
+                return list(np.interp(ks, N, t))
+            return [t[np.searchsorted(N, 0.5 * N[-1])]]
+        return schedule
     lines = [f"== {mode}: scheduling ablations (n={len(sched)}), objective reduction vs tuned exponential backoff"]
     summ = {}
     for c in RO.COSTS:

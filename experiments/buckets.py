@@ -1,9 +1,5 @@
-"""Where do the gains come from? Per runtime bucket: delay, checks and cost of Bayes + Keller vs tuned backoff and
-tuned fixed interval (same model, splits, samples and tuning as run_offline.py).
-
-  python3 experiments/buckets.py {leet|swe|tracelab} [calls.jsonl]
-"""
-import json, math, os, sys
+"""Delay, check counts and cost by runtime bucket. NO_LLM=1 disables prior fusion."""
+import json, os, sys
 import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.dirname(HERE))
 import run_offline as RO
@@ -14,11 +10,12 @@ BUCKETS = [(0, 1000, "< 1 s"), (1000, 10_000, "1-10 s"), (10_000, 1e12, ">= 10 s
 
 def main():
     mode = RO.MODE; calls = RO.suite_data() if mode in ("leet", "local") else RO.trace_data()
-    sp = RO.splits(calls); tune, test, sched, end = sp[:4]; sched_tune = sp[4] if len(sp) > 4 else tune
+    sp = RO.splits(calls); tune, _, sched, _ = sp[:4]; sched_tune = sp[4] if len(sp) > 4 else tune
     scaled = any(c["scale"] for c in calls); h = json.load(open(os.path.join(RO.OUT, f"{mode}.json")))["hyper"]
     res = RO.run_pass(calls, h, set(sched) | set(sched_tune), None, scaled)
     T = {i: calls[i]["ms"] for i in res}
-    pred = lambda i: res[i].get("fused", res[i]["pred"]) if res[i]["llm"] else res[i]["pred"]
+    no_llm = bool(os.environ.get("NO_LLM"))
+    pred = lambda i: res[i].get("fused", res[i]["pred"]) if res[i]["llm"] and not no_llm else res[i]["pred"]
     prof = {i: keller_profile(*pred(i)) for i in sched}
     run = lambda f, ids: np.array([simulate(f(i), T[i]) for i in ids])
     obj = lambda sm, c: float((sm[:, 0] + c * sm[:, 1]).mean())
@@ -48,7 +45,8 @@ def main():
         win = np.mean((ob[:, 0] + c * ob[:, 1]) < (bb[:, 0] + c * bb[:, 1]) - 1e-9); lose = np.mean((ob[:, 0] + c * ob[:, 1]) > (bb[:, 0] + c * bb[:, 1]) + 1e-9)
         L.append(f"   per call vs backoff: ours cheaper on {win:.0%}, costlier on {lose:.0%}, tie {1-win-lose:.0%}")
         print("\n".join(L[-6:]), flush=True)
-    open(os.path.join(RO.OUT, f"buckets_{mode}.txt"), "w").write("\n".join(L) + "\n")
+    suffix = "_nollm" if no_llm else ""
+    open(os.path.join(RO.OUT, f"buckets_{mode}{suffix}.txt"), "w").write("\n".join(L) + "\n")
 
 if __name__ == "__main__":
     main()

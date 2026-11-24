@@ -1,25 +1,6 @@
-"""Online experiment: a real LLM agent solves SWE-bench Verified Mini tasks while its shell commands run
-asynchronously; the waiting policy decides when the agent gets to see each command's result.
+"""Paired SWE-bench runs with backoff and Bayesian checking schedules.
 
-  python experiments/online_swe/run_swe.py                 # 50 tasks x {backoff, ours}, resumable
-  python experiments/online_swe/run_swe.py --limit 2       # pilot on 2 tasks
-  python experiments/online_swe/analyze_swe.py
-
-Agent: the mini-swe-agent (v2.4.6) SWE-bench prompts and text action format (mini_swe_agent_swebench.yaml), one
-bash command per step, executed with `docker exec` in the task's official SWE-bench image (cwd /testbed,
-60 s command timeout), DeepSeek as the model (DS_MODEL, temperature 0), at most STEP_LIMIT steps.
-
-Waiting. Every command runs in the background. The harness looks at it at the policy's check times; if it is
-still running the agent is told so and must answer (one real LLM round: that is the cost of a check), after which
-the harness waits for the next check time. When a check finds the command finished, its output becomes the
-next observation.
-  backoff  exponential backoff with the parameters that are optimal on the offline SWE-bench trace for the
-           current check cost (backoff_table.json, tuned offline on the tuning block)
-  ours     Bayes + Keller: hierarchical Bayesian predictive of the runtime (hyper-parameters fitted offline,
-           history warm-started with the offline SWE-bench calls of the other tasks and updated with every finished live command)
-           -> Keller checks n(t) = sqrt(h(t) / 2c)
-The check cost c used for planning is the mean LLM round latency measured so far in this run (both policies).
-The two policies of one task run at the same time in two containers, so they see the same machine load.
+Commands run asynchronously in Docker; check times determine output visibility.
 """
 import argparse, json, math, os, random, re, subprocess, sys, threading, time, urllib.request, uuid
 HERE = os.path.dirname(os.path.abspath(__file__)); EXP = os.path.dirname(HERE); ROOT = os.path.dirname(EXP)
@@ -42,7 +23,7 @@ STATUS = ("<status>The command is still running ({elapsed:.1f} s so far). Its ou
           "Reply with a short THOUGHT and the command `wait` in the usual format.</status>")
 LOCK = threading.Lock(); C_ROUNDS = []        # measured LLM round latencies (s), shared by both policies
 
-# ------------------------------------------------------------------ data
+# Task data
 def instances():
     if not os.path.exists(DATA):
         rows, off = [], 0
@@ -57,7 +38,7 @@ def instances():
 
 def image(iid): return f"docker.io/swebench/sweb.eval.x86_64.{iid.replace('__', '_1776_')}:latest".lower()
 
-# ------------------------------------------------------------------ the Bayesian model, shared and causal
+# Shared runtime model
 class Model:
     def __init__(self, exclude=()):
         self.h = json.load(open(os.path.join(EXP, "results", "swe.json")))["hyper"]; self.m = HB(**self.h); self.lock = threading.Lock()
@@ -85,7 +66,6 @@ def plan(policy, model, k):
         st, f = BACKOFF[min(BACKOFF, key=lambda x: abs(math.log(x / c)))]; return backoff_policy(st, f, 10_000.0), c
     return keller_checks(*model.predict(k), c), c
 
-# ------------------------------------------------------------------ one episode
 def render(t, **kw): return Template(t, undefined=StrictUndefined).render(**kw)
 
 def run_episode(inst, policy, model, log):
@@ -104,7 +84,7 @@ def run_episode(inst, policy, model, log):
         with LOCK: C_ROUNDS.append(dt)
         msgs.append({"role": "assistant", "content": text}); return text
     try:
-        for step in range(STEP_LIMIT):
+        for _ in range(STEP_LIMIT):
             text = llm(); acts = ACTION_RE.findall(text)
             if len(acts) != 1:
                 msgs.append({"role": "user", "content": render(CFG["model"]["format_error_template"], error="", actions=acts)}); continue
@@ -152,7 +132,6 @@ def run_episode(inst, policy, model, log):
             f"wait delay {sum(c['delay_ms'] for c in cm)/1000:6.1f} s  wall {ep['wall_s']/60:5.1f} min  ${ep['usd']:.2f}  (total ${D.spent():.2f})")
     return ep
 
-# ------------------------------------------------------------------ main
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--limit", type=int, default=0); ap.add_argument("--policies", default="backoff,ours")
     a = ap.parse_args(); os.makedirs(os.path.join(OUT, "traj"), exist_ok=True)
@@ -180,7 +159,10 @@ def main():
             try: run_episode(inst, p, model, log)
             except D.OutOfBudget as e: errs.append(e)
         ths = [threading.Thread(target=go, args=(p,)) for p in todo]
-        [t.start() for t in ths]; [t.join() for t in ths]
+        for t in ths:
+            t.start()
+        for t in ths:
+            t.join()
         if os.environ.get("RM_IMAGES"): subprocess.run([DOCKER, "rmi", img], capture_output=True)   # save disk space
         if errs: log(f"stopped: {errs[0]}"); return
     log("all tasks done")

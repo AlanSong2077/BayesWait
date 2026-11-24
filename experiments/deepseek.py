@@ -1,8 +1,7 @@
-"""Minimal DeepSeek client for the experiments that need an LLM (run on your own machine).
+"""DeepSeek client with retries and usage accounting.
 
-The API key is read locally (env DEEPSEEK_API_KEY, else ENV_FILE, else ~/Desktop/ClaudeFile/.env) and is never
-printed or written anywhere. Spending is tracked in experiments/results/deepseek_ledger.json and capped by
-MAX_USD (default 3). Prices (USD / 1M tokens) are env-overridable: P_IN_MISS, P_IN_HIT, P_OUT.
+Credentials: DEEPSEEK_API_KEY or ENV_FILE. MAX_USD stops new requests once the
+recorded spend reaches the threshold; in-flight requests can exceed it.
 """
 import json, os, threading, time, urllib.error, urllib.request
 
@@ -19,16 +18,16 @@ def key():
     global _key
     if _key: return _key
     if os.environ.get("DEEPSEEK_API_KEY"): _key = os.environ["DEEPSEEK_API_KEY"].strip(); return _key
-    for p in (os.environ.get("ENV_FILE"), os.path.expanduser("~/Desktop/ClaudeFile/.env")):
-        if p and os.path.exists(p):
-            lines = [l.strip() for l in open(p) if l.strip() and not l.strip().startswith("#")]
-            for l in lines:
-                k, _, v = l.partition("=")
-                if k.replace("export ", "").strip() in ("DEEPSEEK_API_KEY", "DEEPSEEK_KEY", "API_KEY") and v.strip():
-                    _key = v.strip().strip("'\""); return _key
-            sk = [l.strip("'\" ") for l in lines if l.strip("'\" ").startswith("sk-")]
-            if len(sk) == 1: _key = sk[0]; return _key
-    raise RuntimeError("DeepSeek API key not found (DEEPSEEK_API_KEY or ~/Desktop/ClaudeFile/.env)")
+    p = os.environ.get("ENV_FILE")
+    if p and os.path.exists(p):
+        lines = [l.strip() for l in open(p) if l.strip() and not l.strip().startswith("#")]
+        for l in lines:
+            k, _, v = l.partition("=")
+            if k.replace("export ", "").strip() in ("DEEPSEEK_API_KEY", "DEEPSEEK_KEY", "API_KEY") and v.strip():
+                _key = v.strip().strip("'\""); return _key
+        sk = [l.strip("'\" ") for l in lines if l.strip("'\" ").startswith("sk-")]
+        if len(sk) == 1: _key = sk[0]; return _key
+    raise RuntimeError("DeepSeek API key not found (DEEPSEEK_API_KEY or ENV_FILE)")
 
 def spent():
     try: return json.load(open(LEDGER))["usd"]
@@ -64,10 +63,10 @@ def chat(messages, max_tokens=400, temperature=0.0):
             raise
 
 PRIOR_PROMPT = ("Estimate the wall-clock runtime in milliseconds for the following shell command.\n"
-                "Output ONLY compact JSON: {\"estimated_ms\": <number>}.\n")   # same prompt as the paper
+                "Output ONLY compact JSON: {\"estimated_ms\": <number>}.\n")
 
 def runtime_prior(context, command, fallback_ms=2000.0):
-    """paper-style LLM runtime prior -> ms (fallback on any failure)."""
+    """Estimate runtime in ms; fall back on request/parse errors, propagate OutOfBudget."""
     try:
         text, _, _ = chat([{"role": "user", "content": PRIOR_PROMPT + context + "\nCommand:\n" + command[:4000]}], max_tokens=400)
         a, b = text.find("{"), text.rfind("}")
